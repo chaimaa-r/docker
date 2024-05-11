@@ -1,0 +1,11 @@
+# Use the official MySQL image
+FROM mysql:latest
+
+# Set the root password
+ENV MYSQL_ROOT_PASSWORD=root
+
+# Expose MySQL port
+EXPOSE 3306
+
+# Copy SQL file into container
+COPY todolist.sql /docker-entrypoint-initdb.d/todolist.sql
