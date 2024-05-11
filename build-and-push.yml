@@ -1,0 +1,48 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Copy files to Docker context
+      run: |
+        cp -R ./* $GITHUB_WORKSPACE/.github/workflows/ --verbose --ignore-existing
+        cp -R ./.github/workflows/* $GITHUB_WORKSPACE/.github/workflows/
+
+    - name: Build Docker image
+      run: |
+        docker build -t task-list-app .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/task-list-app:latest .
+      working-directory: $GITHUB_WORKSPACE
+
+    - name: Push Docker image to Docker Hub
+      run: |
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        docker push ${{ secrets.DOCKER_USERNAME }}/task-list-app:latest
+
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '14'
+
+    - name: Install dependencies
+      run: npm install
+
+    - name: Run tests
+      run: npm test
