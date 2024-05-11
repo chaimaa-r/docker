@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build:
+  build-and-test:
     runs-on: ubuntu-latest
 
     steps:
@@ -18,31 +18,27 @@ jobs:
         cp -R ./* $GITHUB_WORKSPACE/.github/workflows/ --verbose --ignore-existing
         cp -R ./.github/workflows/* $GITHUB_WORKSPACE/.github/workflows/
 
-    - name: Build Docker image
+    - name: Build and start services with Docker Compose
       run: |
-        docker build -t task-list-app .
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/task-list-app:latest .
+        docker-compose build
+        docker-compose up -d
       working-directory: $GITHUB_WORKSPACE
 
-    - name: Push Docker image to Docker Hub
+    - name: Build Docker images
+      run: |
+        docker build -t todo1 -f Dockerfile .
+        docker build -t todo2 -f Dockerfile_mysql .
+      working-directory: $GITHUB_WORKSPACE
+
+    - name: Tag and push Docker images to Docker Hub
       run: |
         echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        docker push ${{ secrets.DOCKER_USERNAME }}/task-list-app:latest
-
-  test:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
-
-    - name: Setup Node.js
-      uses: actions/setup-node@v2
-      with:
-        node-version: '14'
-
-    - name: Install dependencies
-      run: npm install
+        docker tag todo1 ${{ secrets.DOCKER_USERNAME }}/todo1:latest
+        docker tag todo2 ${{ secrets.DOCKER_USERNAME }}/todo2:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/todo1:latest
+        docker push ${{ secrets.DOCKER_USERNAME }}/todo2:latest
 
     - name: Run tests
-      run: npm test
+      run: |
+        # Add commands to run your tests here
+
